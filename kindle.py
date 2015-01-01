@@ -7,7 +7,7 @@ import msgpack
 import sys
 import getopt
 
-BOUNDARY = "==========\n"
+BOUNDARY = "==========\r\n"
 OUTPUT_DIR = "clip"
 FORTUNE_DIR = "fortune"
 FORTUNE_FILE = "kindle-fortune"
@@ -22,7 +22,7 @@ def get_sections(filename):
 
 def get_highlight(section):
     clip = {}
-    lines = [l for l in section.split('\n') if l]
+    lines = [l for l in section.split('\r\n') if l]
     position = re.findall(r'[\d]+-[\d]+', lines[1])
     clip['position'] = position[0]
     clip['book'] = lines[0]
@@ -31,7 +31,7 @@ def get_highlight(section):
     return clip
 
 def get_note(high_section, note_section):
-    notelines = [l for l in note_section.split('\n') if l]
+    notelines = [l for l in note_section.split('\r\n') if l]
     note = notelines[2]
 
     clip = get_highlight(high_section)
@@ -40,7 +40,7 @@ def get_note(high_section, note_section):
     
 def get_clip(section):
     clip = {}
-    lines = [l for l in section.split('\n') if l]
+    lines = [l for l in section.split('\r\n') if l]
     position = re.findall(r'[\d]+', lines[1])[0]
     clip['position'] = position
     clip['book'] = lines[0]
@@ -50,7 +50,7 @@ def get_clip(section):
 
 def get_type(section):
     """设BookMark为0，Highlight为1，Note为2, ClipAritle为3"""
-    lines = [l for l in section.split('\n') if l]
+    lines = [l for l in section.split('\r\n') if l]
     if len(lines) != 3:
         return 0
 
@@ -94,6 +94,24 @@ def export_txt(clips,type):
 
     print("Done! Go to the output directory to checkout the clipping files.^.^")
 
+def export_blog(clips):
+    """export markdown blog type file
+
+    :clips: TODO
+    :returns: TODO
+
+    """
+    
+    filename = os.path.join(OUTPUT_DIR, "blog.md")
+    with open(filename, 'w') as f:
+        for book in clips:
+            lines = []
+            for pos in sorted(clips[book]):
+                lines.append(clips[book][pos])
+            f.write("## {}\n".format(book))    
+            f.write(''.join(lines))
+
+    print("export_blog Done!")
 
 def load_clips():
     """
@@ -111,12 +129,14 @@ def get_note_format(clip,type):
     highlight = clip['content']
     note = clip['note']
     book = clip['book']
+    #print type
     if type == "markdown":
-        format = ">" + highlight + "\nNote:**"+note +"**\n-At Kindle page:" + position + "\n\n--------------\n\n"
+        format = "> " + highlight + "\nNote:**"+note +"**\n-At Kindle page:" + position + "\n\n--------------\n\n"
     elif type == "fortune":
         format = highlight + "\nNote: " + note + "\n-" + book + "\n%\n"
     elif type == "common":
         format = highlight + "\nNote: " + note + "\n-At Kindle page:" + position + "\n\n------------------\n\n"
+    #print format
     return format
 
 def get_highlight_format(clip,type):
@@ -149,6 +169,7 @@ def checkdirectory():
     return 
 
 def main(argv):
+    FILE_NAME = "My Clippings.txt"
     try:
         opts, args = getopt.getopt(argv, "hfmi:",["help","fortune","markdown"])
     except getopt.GetoptError:
@@ -198,8 +219,10 @@ def main(argv):
                 clips[clip['book']][clip['position']] = get_highlight_format(clip,type)
 
 
-    save_clips(clips)
-    export_txt(clips,type)
+    #save_clips(clips)
+    print type
+    #export_txt(clips,type)
+    export_blog(clips)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
